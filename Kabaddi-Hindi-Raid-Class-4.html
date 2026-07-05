@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kabaddi Hindi Raid - Grade 4</title>
+<style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+        font-family: 'Arial', sans-serif;
+        background: linear-gradient(to bottom, #fff3e0 0%, #ffe0b2 100%);
+        min-height:100vh;
+        overflow-x:hidden;
+    }
+    .top-bar {
+        background: linear-gradient(90deg, #d84315, #4527a0);
+        padding:14px 24px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        box-shadow:0 3px 10px rgba(0,0,0,0.25);
+    }
+    .top-bar h1 {
+        color:white;
+        font-size:1.6em;
+        text-shadow:2px 2px 4px rgba(0,0,0,0.3);
+    }
+    .game-subtitle { color:#ffe0b2; font-size:1em; font-weight:bold; }
+
+    /* START SCREEN */
+    #startScreen {
+        max-width:900px;
+        margin:40px auto;
+        background:white;
+        border-radius:20px;
+        padding:40px;
+        box-shadow:0 10px 30px rgba(0,0,0,0.2);
+        text-align:center;
+    }
+    #startScreen h2 { color:#d84315; font-size:2em; margin-bottom:20px; }
+    .rules-box {
+        background:#fff3e0;
+        border:3px dashed #ff9800;
+        border-radius:14px;
+        padding:20px;
+        text-align:left;
+        margin:20px 0;
+        font-size:1.05em;
+        line-height:1.7;
+        color:#4e342e;
+    }
+    .rules-box b { color:#d84315; }
+    #startScreen button, #playAgainBtn {
+        background:linear-gradient(90deg,#d84315,#ff6f00);
+        color:white;
+        border:none;
+        padding:16px 46px;
+        font-size:1.3em;
+        font-weight:bold;
+        border-radius:50px;
+        cursor:pointer;
+        margin-top:10px;
+        box-shadow:0 6px 16px rgba(216,67,21,0.4);
+        transition:transform 0.15s;
+    }
+    #startScreen button:hover, #playAgainBtn:hover { transform:scale(1.05); }
+
+    /* GAME SCREEN */
+    #gameScreen { display:none; max-width:1100px; margin:20px auto; padding:0 16px 40px; }
+
+    .scoreboard {
+        display:flex;
+        justify-content:space-between;
+        gap:16px;
+        margin-bottom:18px;
+    }
+    .team-card {
+        flex:1;
+        border-radius:16px;
+        padding:14px 18px;
+        color:white;
+        box-shadow:0 4px 12px rgba(0,0,0,0.2);
+        transition:box-shadow 0.3s, transform 0.3s;
+    }
+    .team-card.team1 { background:linear-gradient(135deg,#e64a19,#ff8a50); }
+    .team-card.team2 { background:linear-gradient(135deg,#1565c0,#42a5f5); }
+    .team-card.active-turn { transform:scale(1.04); box-shadow:0 0 0 4px gold, 0 6px 18px rgba(0,0,0,0.35); }
+    .team-card .tname { font-size:1.15em; font-weight:bold; }
+    .team-card .tscore { font-size:2em; font-weight:bold; margin:4px 0; }
+    .team-card .tmeta { font-size:0.9em; opacity:0.95; }
+
+    /* MAT */
+    .mat-wrap {
+        background:#6d4c41;
+        border-radius:18px;
+        padding:14px;
+        box-shadow:0 8px 20px rgba(0,0,0,0.3);
+        margin-bottom:18px;
+    }
+    .mat {
+        position:relative;
+        display:flex;
+        height:150px;
+        border-radius:12px;
+        overflow:hidden;
+        border:4px solid #fff8e1;
+    }
+    .mat-half {
+        flex:1;
+        position:relative;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:8px;
+        flex-wrap:wrap;
+        padding:10px 24px;
+    }
+    .mat-half.h1 { background:repeating-linear-gradient(135deg,#ffab91,#ffab91 20px,#ff8a65 20px,#ff8a65 40px); }
+    .mat-half.h2 { background:repeating-linear-gradient(135deg,#90caf9,#90caf9 20px,#64b5f6 20px,#64b5f6 40px); }
+    .mid-line {
+        position:absolute;
+        left:50%; top:0; bottom:0;
+        width:4px;
+        background:repeating-linear-gradient(white,white 10px,transparent 10px,transparent 20px);
+        transform:translateX(-50%);
+        z-index:3;
+    }
+    .player-token {
+        width:34px; height:34px;
+        border-radius:50%;
+        background:#fff8e1;
+        border:3px solid rgba(0,0,0,0.25);
+        display:flex; align-items:center; justify-content:center;
+        font-size:1.1em;
+        transition:transform 0.4s ease, opacity 0.4s ease;
+    }
+    .player-token.out {
+        transform:scale(0);
+        opacity:0;
+    }
+    .raider {
+        position:absolute;
+        top:50%;
+        width:44px; height:44px;
+        border-radius:50%;
+        display:flex; align-items:center; justify-content:center;
+        font-size:1.4em;
+        transform:translate(-50%,-50%);
+        transition:left 0.8s cubic-bezier(.4,0,.2,1);
+        z-index:5;
+        box-shadow:0 0 0 4px gold, 0 4px 10px rgba(0,0,0,0.4);
+        background:white;
+    }
+    .raider.hidden { display:none; }
+    .raider.caught { box-shadow:0 0 0 4px #d32f2f, 0 4px 10px rgba(0,0,0,0.4); }
+
+    .raid-banner {
+        text-align:center;
+        font-size:1.3em;
+        font-weight:bold;
+        color:#4e342e;
+        margin-bottom:10px;
+        min-height:1.6em;
+    }
+
+    /* QUESTION PANEL */
+    .question-panel {
+        background:white;
+        border-radius:18px;
+        padding:24px;
+        box-shadow:0 6px 18px rgba(0,0,0,0.15);
+    }
+    .timer-bar-outer {
+        width:100%;
+        height:14px;
+        background:#eee;
+        border-radius:10px;
+        overflow:hidden;
+        margin-bottom:16px;
+    }
+    .timer-bar-inner {
+        height:100%;
+        background:linear-gradient(90deg,#43a047,#c0ca33);
+        width:100%;
+        transition:width 1s linear, background 0.3s;
+    }
+    .question-text {
+        font-size:1.6em;
+        font-weight:bold;
+        text-align:center;
+        color:#333;
+        margin-bottom:22px;
+        min-height:1.4em;
+    }
+    .options-grid {
+        display:grid;
+        grid-template-columns:repeat(3,1fr);
+        gap:16px;
+    }
+    .option-btn {
+        background:#f5f5f5;
+        border:3px solid #ddd;
+        border-radius:14px;
+        padding:20px 10px;
+        font-size:1.3em;
+        font-weight:bold;
+        color:#333;
+        cursor:pointer;
+        transition:all 0.2s;
+    }
+    .option-btn:hover:not(:disabled) { border-color:#ff9800; background:#fff3e0; transform:translateY(-2px); }
+    .option-btn:disabled { cursor:default; }
+    .option-btn.correct { background:#c8e6c9; border-color:#43a047; color:#1b5e20; }
+    .option-btn.wrong { background:#ffcdd2; border-color:#e53935; color:#b71c1c; }
+
+    .feedback-msg {
+        text-align:center;
+        font-size:1.4em;
+        font-weight:bold;
+        margin-top:16px;
+        min-height:1.4em;
+    }
+    .feedback-msg.success { color:#2e7d32; }
+    .feedback-msg.fail { color:#c62828; }
+
+    /* END SCREEN */
+    #endScreen {
+        display:none;
+        max-width:800px;
+        margin:60px auto;
+        background:white;
+        border-radius:20px;
+        padding:44px;
+        text-align:center;
+        box-shadow:0 10px 30px rgba(0,0,0,0.25);
+    }
+    #endScreen h2 { font-size:2.4em; margin-bottom:14px; }
+    #endScreen .final-score { font-size:1.5em; margin:18px 0; color:#4e342e; font-weight:bold; }
+    #endScreen .reason { font-size:1.1em; color:#666; margin-bottom:20px; }
+
+    @media (max-width:700px) {
+        .options-grid { grid-template-columns:1fr; }
+        .mat-half { padding:6px 10px; gap:5px; }
+        .player-token { width:26px; height:26px; font-size:0.9em; }
+        .top-bar h1 { font-size:1.2em; }
+    }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+    <h1>🤼 KABADDI हिंदी RAID 🤼</h1>
+    <div class="game-subtitle">हिंदी भाषा चुनौती - कक्षा 4</div>
+</div>
+
+<div id="startScreen">
+    <h2>🤼 Kabaddi हिंदी Raid - कक्षा 4 🤼</h2>
+    <div class="rules-box">
+        <b>How to Play:</b><br><br>
+        🚩 Two teams take turns "raiding" with a Hindi grammar/vocabulary question (15 seconds per raid).<br><br>
+        ✅ <b>Correct answer</b> = Successful raid! Your team scores <b>+2 points</b> and tags <b>1 opponent player</b> out.<br><br>
+        ❌ <b>Wrong answer / time out</b> = Raider caught! Opponent scores <b>+1 point</b> and <b>your team loses 1 player</b>.<br><br>
+        🏆 Each team starts with <b>7 players</b>. A team is <b>ALL OUT</b> when it has 0 players left — game over instantly!<br><br>
+        ⏱️ If nobody goes All Out, the game ends after <b>10 raids each</b> — highest score wins.
+    </div>
+    <button onclick="startGame()">🚩 Start the Match</button>
+</div>
+
+<div id="gameScreen">
+    <div class="scoreboard">
+        <div class="team-card team1" id="team1Card">
+            <div class="tname">🟧 Team 1</div>
+            <div class="tscore" id="team1ScoreDisplay">0</div>
+            <div class="tmeta">Players left: <span id="team1PlayersDisplay">7</span>/7</div>
+            <div class="tmeta">Raids: <span id="team1RaidsDisplay">0</span>/10</div>
+        </div>
+        <div class="team-card team2" id="team2Card">
+            <div class="tname">🟦 Team 2</div>
+            <div class="tscore" id="team2ScoreDisplay">0</div>
+            <div class="tmeta">Players left: <span id="team2PlayersDisplay">7</span>/7</div>
+            <div class="tmeta">Raids: <span id="team2RaidsDisplay">0</span>/10</div>
+        </div>
+    </div>
+
+    <div class="mat-wrap">
+        <div class="mat">
+            <div class="mid-line"></div>
+            <div class="mat-half h1" id="team1Mat"></div>
+            <div class="mat-half h2" id="team2Mat"></div>
+            <div class="raider hidden" id="raider">🏃</div>
+        </div>
+    </div>
+
+    <div class="raid-banner" id="raidBanner">Get Ready...</div>
+
+    <div class="question-panel">
+        <div class="timer-bar-outer"><div class="timer-bar-inner" id="timerBar"></div></div>
+        <div class="question-text" id="questionText">Loading question...</div>
+        <div class="options-grid" id="optionsGrid"></div>
+        <div class="feedback-msg" id="feedbackMsg"></div>
+    </div>
+</div>
+
+<div id="endScreen">
+    <h2 id="endTitle">🏆 Match Over!</h2>
+    <div class="reason" id="endReason"></div>
+    <div class="final-score" id="endScore"></div>
+    <button id="playAgainBtn" onclick="location.reload()">🔄 Play Again (New Set)</button>
+</div>
+
+<script>
+        // Five different question sets for Team 1 - Hindi Grade 4
+        // CAREFULLY REVIEWED: Each question has ONLY ONE correct answer
+        const team1QuestionSets = [
+            // Set 1 - विलोम व पर्यायवाची (कठिन शब्द)
+            [
+                { question: "'विजय' का विलोम क्या है?", answer: "पराजय", wrongOptions: ["सफलता", "संघर्ष"] },
+                { question: "'आरंभ' का विलोम क्या है?", answer: "अंत", wrongOptions: ["मध्य", "प्रारंभ"] },
+                { question: "'शत्रु' का पर्यायवाची शब्द है:", answer: "दुश्मन", wrongOptions: ["मित्र", "सखा"] },
+                { question: "'शीघ्र' का पर्यायवाची शब्द है:", answer: "जल्दी", wrongOptions: ["धीरे", "विलंब"] },
+                { question: "'कोमल' का विलोम क्या है?", answer: "कठोर", wrongOptions: ["मुलायम", "नरम"] },
+                { question: "'निर्धन' का पर्यायवाची शब्द है:", answer: "गरीब", wrongOptions: ["धनवान", "अमीर"] },
+                { question: "'प्रशंसा' का विलोम क्या है?", answer: "निंदा", wrongOptions: ["तारीफ", "सम्मान"] },
+                { question: "'वीर' का पर्यायवाची शब्द है:", answer: "बहादुर", wrongOptions: ["कायर", "डरपोक"] },
+                { question: "'उदार' का विलोम क्या है?", answer: "कंजूस", wrongOptions: ["दानी", "दयालु"] },
+                { question: "'चतुर' का पर्यायवाची शब्द है:", answer: "होशियार", wrongOptions: ["मूर्ख", "अनजान"] }
+            ],
+            // Set 2 - संज्ञा के भेद व सर्वनाम
+            [
+                { question: "'दिल्ली' किस प्रकार की संज्ञा है?", answer: "व्यक्तिवाचक संज्ञा", wrongOptions: ["जातिवाचक संज्ञा", "भाववाचक संज्ञा"] },
+                { question: "'ईमानदारी' किस प्रकार की संज्ञा है?", answer: "भाववाचक संज्ञा", wrongOptions: ["जातिवाचक संज्ञा", "व्यक्तिवाचक संज्ञा"] },
+                { question: "'लड़का', 'शहर' जैसे शब्द किस संज्ञा के उदाहरण हैं?", answer: "जातिवाचक संज्ञा", wrongOptions: ["व्यक्तिवाचक संज्ञा", "भाववाचक संज्ञा"] },
+                { question: "'वह पढ़ता है' - इस वाक्य में 'वह' कौन सा सर्वनाम है?", answer: "पुरुषवाचक सर्वनाम", wrongOptions: ["प्रश्नवाचक सर्वनाम", "निश्चयवाचक सर्वनाम"] },
+                { question: "'कौन आया?' में 'कौन' किस प्रकार का सर्वनाम है?", answer: "प्रश्नवाचक सर्वनाम", wrongOptions: ["पुरुषवाचक सर्वनाम", "संबंधवाचक सर्वनाम"] },
+                { question: "'सेना' शब्द किस प्रकार की संज्ञा है?", answer: "समूहवाचक संज्ञा", wrongOptions: ["व्यक्तिवाचक संज्ञा", "भाववाचक संज्ञा"] },
+                { question: "'मैं', 'तुम', 'वह' — ये शब्द क्या कहलाते हैं?", answer: "सर्वनाम", wrongOptions: ["संज्ञा", "विशेषण"] },
+                { question: "'मिठास' शब्द किस संज्ञा का उदाहरण है?", answer: "भाववाचक संज्ञा", wrongOptions: ["जातिवाचक संज्ञा", "व्यक्तिवाचक संज्ञा"] },
+                { question: "'गंगा' किस प्रकार की संज्ञा है?", answer: "व्यक्तिवाचक संज्ञा", wrongOptions: ["जातिवाचक संज्ञा", "भाववाचक संज्ञा"] },
+                { question: "'यह मेरी किताब है' में 'यह' कौन सा सर्वनाम है?", answer: "निश्चयवाचक सर्वनाम", wrongOptions: ["प्रश्नवाचक सर्वनाम", "पुरुषवाचक सर्वनाम"] }
+            ],
+            // Set 3 - काल (वर्तमान, भूत, भविष्य)
+            [
+                { question: "'राम खाना खाता है' किस काल का वाक्य है?", answer: "वर्तमान काल", wrongOptions: ["भूत काल", "भविष्य काल"] },
+                { question: "'राम ने खाना खाया' किस काल का वाक्य है?", answer: "भूत काल", wrongOptions: ["वर्तमान काल", "भविष्य काल"] },
+                { question: "'राम खाना खाएगा' किस काल का वाक्य है?", answer: "भविष्य काल", wrongOptions: ["वर्तमान काल", "भूत काल"] },
+                { question: "'मैं जाऊँगा' — यह किस काल में है?", answer: "भविष्य काल", wrongOptions: ["वर्तमान काल", "भूत काल"] },
+                { question: "'वह गया था' — यह किस काल में है?", answer: "भूत काल", wrongOptions: ["वर्तमान काल", "भविष्य काल"] },
+                { question: "'बच्चे खेलते हैं' — यह किस काल में है?", answer: "वर्तमान काल", wrongOptions: ["भूत काल", "भविष्य काल"] },
+                { question: "काल के कितने भेद होते हैं?", answer: "तीन", wrongOptions: ["दो", "चार"] },
+                { question: "'सीता पढ़ रही है' — यह किस काल में है?", answer: "वर्तमान काल", wrongOptions: ["भूत काल", "भविष्य काल"] },
+                { question: "'हम कल जायेंगे' — यह किस काल का वाक्य है?", answer: "भविष्य काल", wrongOptions: ["वर्तमान काल", "भूत काल"] },
+                { question: "'उसने पत्र लिखा' — यह किस काल का वाक्य है?", answer: "भूत काल", wrongOptions: ["वर्तमान काल", "भविष्य काल"] }
+            ],
+            // Set 4 - मुहावरे व विशेषण
+            [
+                { question: "'आँखें खुलना' मुहावरे का अर्थ है:", answer: "सचेत होना", wrongOptions: ["सो जाना", "रोना"] },
+                { question: "'नाक में दम करना' मुहावरे का अर्थ है:", answer: "बहुत परेशान करना", wrongOptions: ["खुश करना", "चुप रहना"] },
+                { question: "'दाँतों तले उंगली दबाना' मुहावरे का अर्थ है:", answer: "आश्चर्यचकित होना", wrongOptions: ["डर जाना", "हँसना"] },
+                { question: "'मीठे' शब्द में कौन सा विशेषण है?", answer: "गुणवाचक विशेषण", wrongOptions: ["संख्यावाचक विशेषण", "परिमाणवाचक विशेषण"] },
+                { question: "'दस लड़के' में 'दस' कौन सा विशेषण है?", answer: "संख्यावाचक विशेषण", wrongOptions: ["गुणवाचक विशेषण", "परिमाणवाचक विशेषण"] },
+                { question: "'कुछ दूध' में 'कुछ' कौन सा विशेषण है?", answer: "परिमाणवाचक विशेषण", wrongOptions: ["संख्यावाचक विशेषण", "गुणवाचक विशेषण"] },
+                { question: "'सिर पर पैर रखकर भागना' मुहावरे का अर्थ है:", answer: "बहुत तेज़ भागना", wrongOptions: ["धीरे चलना", "आराम करना"] },
+                { question: "'नौ दो ग्यारह होना' मुहावरे का अर्थ है:", answer: "भाग जाना", wrongOptions: ["सो जाना", "खेलना"] },
+                { question: "जो शब्द संज्ञा की विशेषता बताए उसे क्या कहते हैं?", answer: "विशेषण", wrongOptions: ["क्रिया", "सर्वनाम"] },
+                { question: "'कान खड़े होना' मुहावरे का अर्थ है:", answer: "सतर्क हो जाना", wrongOptions: ["सो जाना", "हँसना"] }
+            ],
+            // Set 5 - वचन, लिंग व एक शब्द
+            [
+                { question: "'गुरु' का बहुवचन क्या है?", answer: "गुरुजन", wrongOptions: ["गुरुओं", "गुरु"] },
+                { question: "'माली' का स्त्रीलिंग क्या है?", answer: "मालिन", wrongOptions: ["मालकिन", "मालीनी"] },
+                { question: "'जो पढ़ना-लिखना नहीं जानता' उसे एक शब्द में क्या कहते हैं?", answer: "अनपढ़", wrongOptions: ["विद्वान", "ज्ञानी"] },
+                { question: "'जो सबकुछ जानता हो' उसे एक शब्द में क्या कहते हैं?", answer: "सर्वज्ञ", wrongOptions: ["अज्ञानी", "मूर्ख"] },
+                { question: "'नेता' का बहुवचन क्या है?", answer: "नेतागण", wrongOptions: ["नेताओं", "नेता"] },
+                { question: "'साधु' का स्त्रीलिंग क्या है?", answer: "साध्वी", wrongOptions: ["साधुनी", "साधिन"] },
+                { question: "'जिसकी कोई सीमा न हो' उसे एक शब्द में क्या कहते हैं?", answer: "असीम", wrongOptions: ["सीमित", "विशाल"] },
+                { question: "'सिंह' का स्त्रीलिंग क्या है?", answer: "सिंहनी", wrongOptions: ["बाघिन", "हथिनी"] },
+                { question: "'छात्र' का स्त्रीलिंग क्या है?", answer: "छात्रा", wrongOptions: ["शिक्षिका", "विद्यार्थी"] },
+                { question: "'बालक' का बहुवचन क्या है?", answer: "बालकगण", wrongOptions: ["बालकों", "बालक"] }
+            ]
+        ];
+
+        // Five different question sets for Team 2 - Hindi Grade 4
+        // CAREFULLY REVIEWED: Each question has ONLY ONE correct answer
+        const team2QuestionSets = [
+            // Set 1 - विलोम व पर्यायवाची (कठिन शब्द)
+            [
+                { question: "'जीत' का विलोम क्या है?", answer: "हार", wrongOptions: ["सफलता", "विजय"] },
+                { question: "'सुख' का विलोम क्या है?", answer: "दुःख", wrongOptions: ["आनंद", "खुशी"] },
+                { question: "'मित्र' का पर्यायवाची शब्द है:", answer: "सखा", wrongOptions: ["शत्रु", "दुश्मन"] },
+                { question: "'धन' का पर्यायवाची शब्द है:", answer: "दौलत", wrongOptions: ["गरीबी", "अभाव"] },
+                { question: "'कठिन' का विलोम क्या है?", answer: "सरल", wrongOptions: ["जटिल", "मुश्किल"] },
+                { question: "'सुंदर' का पर्यायवाची शब्द है:", answer: "रूपवान", wrongOptions: ["कुरूप", "भद्दा"] },
+                { question: "'निंदा' का विलोम क्या है?", answer: "प्रशंसा", wrongOptions: ["आलोचना", "बुराई"] },
+                { question: "'बुद्धिमान' का पर्यायवाची शब्द है:", answer: "समझदार", wrongOptions: ["मूर्ख", "नादान"] },
+                { question: "'दानी' का विलोम क्या है?", answer: "कंजूस", wrongOptions: ["उदार", "दयालु"] },
+                { question: "'तीव्र' का पर्यायवाची शब्द है:", answer: "तेज", wrongOptions: ["धीमा", "मंद"] }
+            ],
+            // Set 2 - संज्ञा के भेद व सर्वनाम
+            [
+                { question: "'मुंबई' किस प्रकार की संज्ञा है?", answer: "व्यक्तिवाचक संज्ञा", wrongOptions: ["जातिवाचक संज्ञा", "भाववाचक संज्ञा"] },
+                { question: "'बुढ़ापा' किस प्रकार की संज्ञा है?", answer: "भाववाचक संज्ञा", wrongOptions: ["जातिवाचक संज्ञा", "व्यक्तिवाचक संज्ञा"] },
+                { question: "'नदी', 'पर्वत' जैसे शब्द किस संज्ञा के उदाहरण हैं?", answer: "जातिवाचक संज्ञा", wrongOptions: ["व्यक्तिवाचक संज्ञा", "भाववाचक संज्ञा"] },
+                { question: "'भीड़' शब्द किस प्रकार की संज्ञा है?", answer: "समूहवाचक संज्ञा", wrongOptions: ["व्यक्तिवाचक संज्ञा", "भाववाचक संज्ञा"] },
+                { question: "'तुम कहाँ जा रहे हो?' में 'तुम' कौन सा सर्वनाम है?", answer: "पुरुषवाचक सर्वनाम", wrongOptions: ["प्रश्नवाचक सर्वनाम", "निश्चयवाचक सर्वनाम"] },
+                { question: "'क्या हुआ?' में 'क्या' किस प्रकार का सर्वनाम है?", answer: "प्रश्नवाचक सर्वनाम", wrongOptions: ["पुरुषवाचक सर्वनाम", "संबंधवाचक सर्वनाम"] },
+                { question: "'वह मेरी बहन है' में 'वह' कौन सा सर्वनाम है?", answer: "निश्चयवाचक सर्वनाम", wrongOptions: ["प्रश्नवाचक सर्वनाम", "पुरुषवाचक सर्वनाम"] },
+                { question: "'सच्चाई' शब्द किस संज्ञा का उदाहरण है?", answer: "भाववाचक संज्ञा", wrongOptions: ["जातिवाचक संज्ञा", "व्यक्तिवाचक संज्ञा"] },
+                { question: "'यमुना' किस प्रकार की संज्ञा है?", answer: "व्यक्तिवाचक संज्ञा", wrongOptions: ["जातिवाचक संज्ञा", "भाववाचक संज्ञा"] },
+                { question: "'हम', 'हमलोग' — ये शब्द क्या कहलाते हैं?", answer: "सर्वनाम", wrongOptions: ["संज्ञा", "क्रिया"] }
+            ],
+            // Set 3 - काल (वर्तमान, भूत, भविष्य)
+            [
+                { question: "'सीता गाना गाती है' किस काल का वाक्य है?", answer: "वर्तमान काल", wrongOptions: ["भूत काल", "भविष्य काल"] },
+                { question: "'सीता ने गाना गाया' किस काल का वाक्य है?", answer: "भूत काल", wrongOptions: ["वर्तमान काल", "भविष्य काल"] },
+                { question: "'सीता गाना गाएगी' किस काल का वाक्य है?", answer: "भविष्य काल", wrongOptions: ["वर्तमान काल", "भूत काल"] },
+                { question: "'हम खेलेंगे' — यह किस काल में है?", answer: "भविष्य काल", wrongOptions: ["वर्तमान काल", "भूत काल"] },
+                { question: "'वे आए थे' — यह किस काल में है?", answer: "भूत काल", wrongOptions: ["वर्तमान काल", "भविष्य काल"] },
+                { question: "'पक्षी उड़ते हैं' — यह किस काल में है?", answer: "वर्तमान काल", wrongOptions: ["भूत काल", "भविष्य काल"] },
+                { question: "'मैं लिख रहा हूँ' — यह किस काल में है?", answer: "वर्तमान काल", wrongOptions: ["भूत काल", "भविष्य काल"] },
+                { question: "'कल परीक्षा होगी' — यह किस काल का वाक्य है?", answer: "भविष्य काल", wrongOptions: ["वर्तमान काल", "भूत काल"] },
+                { question: "'उसने खाना बनाया' — यह किस काल का वाक्य है?", answer: "भूत काल", wrongOptions: ["वर्तमान काल", "भविष्य काल"] },
+                { question: "भूतकाल किसे कहते हैं?", answer: "बीते समय की क्रिया को", wrongOptions: ["आने वाले समय की क्रिया को", "वर्तमान समय की क्रिया को"] }
+            ],
+            // Set 4 - मुहावरे व विशेषण
+            [
+                { question: "'हाथ पैर मारना' मुहावरे का अर्थ है:", answer: "कोशिश करना", wrongOptions: ["आराम करना", "सो जाना"] },
+                { question: "'आँखों में धूल झोंकना' मुहावरे का अर्थ है:", answer: "धोखा देना", wrongOptions: ["मदद करना", "सच बोलना"] },
+                { question: "'खून पसीना एक करना' मुहावरे का अर्थ है:", answer: "कड़ी मेहनत करना", wrongOptions: ["आराम करना", "सोना"] },
+                { question: "'सुनहरे' शब्द में कौन सा विशेषण है?", answer: "गुणवाचक विशेषण", wrongOptions: ["संख्यावाचक विशेषण", "परिमाणवाचक विशेषण"] },
+                { question: "'पाँच किताबें' में 'पाँच' कौन सा विशेषण है?", answer: "संख्यावाचक विशेषण", wrongOptions: ["गुणवाचक विशेषण", "परिमाणवाचक विशेषण"] },
+                { question: "'थोड़ा पानी' में 'थोड़ा' कौन सा विशेषण है?", answer: "परिमाणवाचक विशेषण", wrongOptions: ["संख्यावाचक विशेषण", "गुणवाचक विशेषण"] },
+                { question: "'दाल में कुछ काला होना' मुहावरे का अर्थ है:", answer: "कुछ गड़बड़ होना", wrongOptions: ["सब ठीक होना", "खुश होना"] },
+                { question: "'मुँह में पानी आना' मुहावरे का अर्थ है:", answer: "बहुत लालच होना", wrongOptions: ["गुस्सा आना", "डर लगना"] },
+                { question: "जो शब्द क्रिया की विशेषता बताए उसे क्या कहते हैं?", answer: "क्रिया विशेषण", wrongOptions: ["संज्ञा", "सर्वनाम"] },
+                { question: "'पेट में चूहे दौड़ना' मुहावरे का अर्थ है:", answer: "बहुत भूख लगना", wrongOptions: ["नींद आना", "थकान होना"] }
+            ],
+            // Set 5 - वचन, लिंग व एक शब्द
+            [
+                { question: "'देवता' का बहुवचन क्या है?", answer: "देवतागण", wrongOptions: ["देवताओं", "देवता"] },
+                { question: "'धोबी' का स्त्रीलिंग क्या है?", answer: "धोबिन", wrongOptions: ["धोबिनी", "धोबिका"] },
+                { question: "'जो कठिनाई से समझ आए' उसे एक शब्द में क्या कहते हैं?", answer: "दुर्बोध", wrongOptions: ["सरल", "स्पष्ट"] },
+                { question: "'जो देखा न जा सके' उसे एक शब्द में क्या कहते हैं?", answer: "अदृश्य", wrongOptions: ["दृश्य", "स्पष्ट"] },
+                { question: "'विद्यार्थी' का बहुवचन क्या है?", answer: "विद्यार्थीगण", wrongOptions: ["विद्यार्थियों", "विद्यार्थी"] },
+                { question: "'बाघ' का स्त्रीलिंग क्या है?", answer: "बाघिन", wrongOptions: ["बाघनी", "शेरनी"] },
+                { question: "'जिसका आकार बहुत बड़ा हो' उसे एक शब्द में क्या कहते हैं?", answer: "विशाल", wrongOptions: ["छोटा", "संकीर्ण"] },
+                { question: "'हंस' का स्त्रीलिंग क्या है?", answer: "हंसिनी", wrongOptions: ["हंसनी", "बत्तख"] },
+                { question: "'लेखक' का स्त्रीलिंग क्या है?", answer: "लेखिका", wrongOptions: ["लेखकिनी", "विद्वान"] },
+                { question: "'शिशु' का बहुवचन क्या है?", answer: "शिशुगण", wrongOptions: ["शिशुओं", "शिशु"] }
+            ]
+        ];
+
+
+    // ---------- Game State ----------
+    const MAX_RAIDS_PER_TEAM = 10;
+    const RAID_TIME = 15;
+    const START_PLAYERS = 7;
+
+    let team1Score = 0, team2Score = 0;
+    let team1Players = START_PLAYERS, team2Players = START_PLAYERS;
+    let team1RaidsTaken = 0, team2RaidsTaken = 0;
+    let currentRaidTeam = 'team1';
+    let gameEnded = false;
+    let timerInterval = null;
+    let timeLeft = RAID_TIME;
+    let answered = false;
+
+    let usedSets = [];
+    let selectedSetIndex;
+    let team1Questions = [];
+    let team2Questions = [];
+
+    function shuffleArray(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
+
+    function createRandomOptions(correctAnswer, wrongOptions) {
+        return shuffleArray([correctAnswer, ...wrongOptions]);
+    }
+
+    function getNewSetIndex() {
+        if (usedSets.length >= 5) { usedSets = []; }
+        let available = [0,1,2,3,4].filter(i => !usedSets.includes(i));
+        let idx = available[Math.floor(Math.random() * available.length)];
+        usedSets.push(idx);
+        return idx;
+    }
+
+    function prepareQuestions() {
+        selectedSetIndex = getNewSetIndex();
+        team1Questions = team1QuestionSets[selectedSetIndex].map(q => ({
+            question: q.question,
+            answer: q.answer,
+            options: createRandomOptions(q.answer, q.wrongOptions)
+        }));
+        team2Questions = team2QuestionSets[selectedSetIndex].map(q => ({
+            question: q.question,
+            answer: q.answer,
+            options: createRandomOptions(q.answer, q.wrongOptions)
+        }));
+    }
+
+    function renderPlayers() {
+        const t1Mat = document.getElementById('team1Mat');
+        const t2Mat = document.getElementById('team2Mat');
+        t1Mat.innerHTML = '';
+        t2Mat.innerHTML = '';
+        for (let i = 0; i < START_PLAYERS; i++) {
+            const el1 = document.createElement('div');
+            el1.className = 'player-token';
+            el1.id = 'team1-player-' + i;
+            el1.textContent = '🧍';
+            if (i >= team1Players) el1.classList.add('out');
+            t1Mat.appendChild(el1);
+
+            const el2 = document.createElement('div');
+            el2.className = 'player-token';
+            el2.id = 'team2-player-' + i;
+            el2.textContent = '🧍';
+            if (i >= team2Players) el2.classList.add('out');
+            t2Mat.appendChild(el2);
+        }
+    }
+
+    function updateScoreboard() {
+        document.getElementById('team1ScoreDisplay').textContent = team1Score;
+        document.getElementById('team2ScoreDisplay').textContent = team2Score;
+        document.getElementById('team1PlayersDisplay').textContent = team1Players;
+        document.getElementById('team2PlayersDisplay').textContent = team2Players;
+        document.getElementById('team1RaidsDisplay').textContent = team1RaidsTaken;
+        document.getElementById('team2RaidsDisplay').textContent = team2RaidsTaken;
+
+        document.getElementById('team1Card').classList.toggle('active-turn', currentRaidTeam === 'team1' && !gameEnded);
+        document.getElementById('team2Card').classList.toggle('active-turn', currentRaidTeam === 'team2' && !gameEnded);
+    }
+
+    function startGame() {
+        document.getElementById('startScreen').style.display = 'none';
+        document.getElementById('gameScreen').style.display = 'block';
+        prepareQuestions();
+        renderPlayers();
+        updateScoreboard();
+        startRaid('team1');
+    }
+
+    function startRaid(team) {
+        if (gameEnded) return;
+        currentRaidTeam = team;
+        answered = false;
+        updateScoreboard();
+
+        const banner = document.getElementById('raidBanner');
+        banner.textContent = (team === 'team1' ? '🟧 Team 1 is Raiding!' : '🟦 Team 2 is Raiding!');
+        banner.style.color = (team === 'team1' ? '#d84315' : '#1565c0');
+
+        document.getElementById('feedbackMsg').textContent = '';
+        document.getElementById('feedbackMsg').className = 'feedback-msg';
+
+        const qList = team === 'team1' ? team1Questions : team2Questions;
+        const idx = team === 'team1' ? team1RaidsTaken : team2RaidsTaken;
+        const q = qList[idx];
+
+        document.getElementById('questionText').textContent = q.question;
+        const grid = document.getElementById('optionsGrid');
+        grid.innerHTML = '';
+        q.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.textContent = opt;
+            btn.onclick = () => selectAnswer(opt, q.answer, btn);
+            grid.appendChild(btn);
+        });
+
+        positionRaider(team, 'home');
+
+        timeLeft = RAID_TIME;
+        const bar = document.getElementById('timerBar');
+        bar.style.width = '100%';
+        bar.style.background = 'linear-gradient(90deg,#43a047,#c0ca33)';
+
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            const pct = Math.max(0, (timeLeft / RAID_TIME) * 100);
+            bar.style.width = pct + '%';
+            if (pct < 35) bar.style.background = 'linear-gradient(90deg,#e53935,#ff9800)';
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                if (!answered) {
+                    answered = true;
+                    disableOptions();
+                    document.getElementById('feedbackMsg').textContent = "⏰ Time's up! Raider caught!";
+                    document.getElementById('feedbackMsg').className = 'feedback-msg fail';
+                    setTimeout(() => resolveRaid(false), 600);
+                }
+            }
+        }, 1000);
+    }
+
+    function disableOptions() {
+        document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+    }
+
+    function selectAnswer(selected, correct, btnEl) {
+        if (answered) return;
+        answered = true;
+        clearInterval(timerInterval);
+        disableOptions();
+
+        const isCorrect = selected === correct;
+        document.querySelectorAll('.option-btn').forEach(b => {
+            if (b.textContent === correct) b.classList.add('correct');
+            else if (b === btnEl) b.classList.add('wrong');
+        });
+
+        const fb = document.getElementById('feedbackMsg');
+        if (isCorrect) {
+            fb.textContent = '✅ Successful Raid!';
+            fb.className = 'feedback-msg success';
+        } else {
+            fb.textContent = '❌ Raider Caught!';
+            fb.className = 'feedback-msg fail';
+        }
+        setTimeout(() => resolveRaid(isCorrect), 700);
+    }
+
+    function positionRaider(team, state) {
+        const raider = document.getElementById('raider');
+        raider.classList.remove('hidden', 'caught');
+        raider.style.background = (team === 'team1' ? '#ffab91' : '#90caf9');
+        if (state === 'home') {
+            raider.style.left = (team === 'team1' ? '10%' : '90%');
+        } else if (state === 'opponent') {
+            raider.style.left = (team === 'team1' ? '90%' : '10%');
+        } else if (state === 'mid') {
+            raider.style.left = '50%';
+        }
+    }
+
+    function resolveRaid(success) {
+        const team = currentRaidTeam;
+        const opponent = team === 'team1' ? 'team2' : 'team1';
+
+        if (success) {
+            positionRaider(team, 'opponent');
+            setTimeout(() => {
+                if (team === 'team1') team1Score += 2; else team2Score += 2;
+                removePlayer(opponent);
+                updateScoreboard();
+                setTimeout(() => {
+                    positionRaider(team, 'home');
+                    setTimeout(() => finishTurn(team), 500);
+                }, 500);
+            }, 850);
+        } else {
+            positionRaider(team, 'mid');
+            setTimeout(() => {
+                document.getElementById('raider').classList.add('caught');
+                if (team === 'team1') team2Score += 1; else team1Score += 1;
+                removePlayer(team);
+                updateScoreboard();
+                setTimeout(() => {
+                    document.getElementById('raider').classList.add('hidden');
+                    setTimeout(() => finishTurn(team), 400);
+                }, 600);
+            }, 500);
+        }
+    }
+
+    function removePlayer(team) {
+        if (team === 'team1' && team1Players > 0) {
+            team1Players--;
+            const el = document.getElementById('team1-player-' + team1Players);
+            if (el) el.classList.add('out');
+        } else if (team === 'team2' && team2Players > 0) {
+            team2Players--;
+            const el = document.getElementById('team2-player-' + team2Players);
+            if (el) el.classList.add('out');
+        }
+    }
+
+    function finishTurn(teamThatRaided) {
+        if (teamThatRaided === 'team1') team1RaidsTaken++; else team2RaidsTaken++;
+        updateScoreboard();
+
+        if (team1Players <= 0) { endGame('team2', 'ALL OUT! Team 1 has no players left on the mat.'); return; }
+        if (team2Players <= 0) { endGame('team1', 'ALL OUT! Team 2 has no players left on the mat.'); return; }
+
+        if (team1RaidsTaken >= MAX_RAIDS_PER_TEAM && team2RaidsTaken >= MAX_RAIDS_PER_TEAM) {
+            if (team1Score > team2Score) endGame('team1', 'All raids complete! Team 1 finished with the higher score.');
+            else if (team2Score > team1Score) endGame('team2', 'All raids complete! Team 2 finished with the higher score.');
+            else {
+                if (team1Players > team2Players) endGame('team1', 'Scores level! Team 1 wins with more players remaining.');
+                else if (team2Players > team1Players) endGame('team2', 'Scores level! Team 2 wins with more players remaining.');
+                else endGame('draw', 'A perfectly matched contest — it\'s a DRAW!');
+            }
+            return;
+        }
+
+        const nextTeam = teamThatRaided === 'team1' ? 'team2' : 'team1';
+        startRaid(nextTeam);
+    }
+
+    function endGame(winner, reason) {
+        gameEnded = true;
+        clearInterval(timerInterval);
+        document.getElementById('gameScreen').style.display = 'none';
+        document.getElementById('endScreen').style.display = 'block';
+
+        const titleEl = document.getElementById('endTitle');
+        if (winner === 'draw') {
+            titleEl.textContent = '🤝 Match Drawn!';
+        } else {
+            titleEl.textContent = (winner === 'team1' ? '🟧 Team 1 Wins! 🏆' : '🟦 Team 2 Wins! 🏆');
+        }
+        document.getElementById('endReason').textContent = reason;
+        document.getElementById('endScore').innerHTML =
+            'Final Score — Team 1: ' + team1Score + ' &nbsp;|&nbsp; Team 2: ' + team2Score +
+            '<br>Players Left — Team 1: ' + team1Players + ' &nbsp;|&nbsp; Team 2: ' + team2Players;
+    }
+</script>
+</body>
+</html>
